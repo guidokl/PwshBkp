@@ -1,6 +1,12 @@
-# 💾 PwshBkp
+# 💾 PwshBkp.ps1
 
 A PowerShell backup script to quickly copy files and directories to a given location.
+
+---
+
+## 🖼️ Screenshot
+
+<img src="assets/screenshot.png" alt="PwshBkp.ps1 Menu Screenshot" width="100%" />
 
 ---
 
