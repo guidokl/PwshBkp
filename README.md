@@ -12,8 +12,8 @@ A PowerShell backup script to quickly copy files and directories to a given loca
 
 ## 📌 What This Does
 
-- Backs up your config folders into `Desktop\CfgBackup_YYMMDD` (each item gets its own subfolder).
-- Also creates `Desktop\CfgBackup_YYMMDD.zip` that **includes this script** for convenience.
+- Backs up your config folders into `Desktop\PwshBkp_YYMMDD` (each item gets its own subfolder).
+- Also creates `Desktop\PwshBkp_YYMMDD.zip` that **includes this script** for convenience.
 - Restores from a chosen backup **folder** (not directly from `.zip`).
 
 ---
@@ -42,6 +42,7 @@ $IncludePaths = [ordered]@{
     "Scripts"         = "D:\Home\Files\Scripts"
 }
 ```
+
 ---
 
 ## 📥 Backup
@@ -57,8 +58,8 @@ $IncludePaths = [ordered]@{
 ## ♻️ Restore
 
 - Auto-detects backup root in this order:
-  1. If the script lives inside a `CfgBackup_*` folder anywhere, use that.
-  2. Newest `CfgBackup_*` folder on your Desktop.
+  1. If the script lives inside a `PwshBkp_*` folder anywhere, use that.
+  2. Newest `PwshBkp_*` folder on your Desktop.
   3. Otherwise, you’re prompted to enter a path.
 - **Restore item** – choose one user-dir item to restore.
 - **Restore all** – restores all user-dir items.

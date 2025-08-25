@@ -13,8 +13,8 @@
         8) Quit
 
     ZIP POLICY (simple & robust)
-    - Backup always produces a *folder* at Desktop\CfgBackup_YYMMDD.
-    - Then it also creates Desktop\CfgBackup_YYMMDD.zip for archival.
+    - Backup always produces a *folder* at Desktop\PwshBkp_YYMMDD.
+    - Then it also creates Desktop\PwshBkp_YYMMDD.zip for archival.
     - The ZIP includes this script file (if available).
     - Restore ONLY works from a real folder. If you have a ZIP, unzip it first.
 
@@ -30,7 +30,7 @@
 # -------- Settings --------
 $UserDesktop = [Environment]::GetFolderPath('Desktop')
 $TodayStamp  = (Get-Date).ToString('yyMMdd')
-$DefaultBackupRoot = Join-Path $UserDesktop "CfgBackup_$TodayStamp"
+$DefaultBackupRoot = Join-Path $UserDesktop "PwshBkp_$TodayStamp"
 $DefaultZipPath    = "$DefaultBackupRoot.zip"
 $UserHome = $env:USERPROFILE
 
@@ -65,8 +65,8 @@ SCRIPT DOCUMENTATION
 ====================
 What this does
 --------------
-- Backs up your config folders into Desktop\CfgBackup_YYMMDD (each item to its own subfolder).
-- Also creates Desktop\CfgBackup_YYMMDD.zip that INCLUDES THIS SCRIPT for convenience.
+- Backs up your config folders into Desktop\PwshBkp_YYMMDD (each item to its own subfolder).
+- Also creates Desktop\PwshBkp_YYMMDD.zip that INCLUDES THIS SCRIPT for convenience.
 - Restores from a chosen backup *folder* (not directly from .zip).
 
 Backup
@@ -78,8 +78,8 @@ Backup
 Restore
 -------
 - Auto-detects backup root in this order:
-    1) If the script lives inside a CfgBackup_* folder anywhere, use that.
-    2) Newest CfgBackup_* on your Desktop.
+    1) If the script lives inside a PwshBkp_* folder anywhere, use that.
+    2) Newest PwshBkp_* on your Desktop.
     3) Otherwise, you're prompted to enter a path.
 - "Restore item": choose one user-dir item to restore.
 - "Restore all": restores all user-dir items.
@@ -103,15 +103,15 @@ function Confirm($message) {
     return ($ans -match '^(y|yes)$')
 }
 
-function Ensure-Dir($path) {
+function New-DirectoryIfMissing($path) {
     if (-not (Test-Path -LiteralPath $path)) {
         New-Item -ItemType Directory -Path $path -Force | Out-Null
     }
 }
 
-function Latest-BackupRootOnDesktop {
+function Get-LatestBackupRootOnDesktop {
     Get-ChildItem -LiteralPath $UserDesktop -Directory -ErrorAction SilentlyContinue |
-        Where-Object { $_.Name -like 'CfgBackup_*' } |
+    Where-Object { $_.Name -like 'PwshBkp_*' } |
         Sort-Object LastWriteTime -Descending |
         Select-Object -First 1 -ExpandProperty FullName -ErrorAction SilentlyContinue
 }
@@ -122,7 +122,7 @@ function Find-AncestorBackupRoot([string]$startPath) {
     } catch { return $null }
     while ($cur -and (Test-Path -LiteralPath $cur)) {
         $leaf = Split-Path $cur -Leaf
-        if ($leaf -like 'CfgBackup_*') { return $cur }
+    if ($leaf -like 'PwshBkp_*') { return $cur }
         $parent = Split-Path $cur -Parent
         if ([string]::IsNullOrWhiteSpace($parent) -or ($parent -eq $cur)) { break }
         $cur = $parent
@@ -136,7 +136,7 @@ function Get-ScriptDirectory {
     else { return (Get-Location).Path }
 }
 
-function Choose-BackupRoot([switch]$SilentIfDetected) {
+function Select-BackupRoot([switch]$SilentIfDetected) {
     $scriptDir = Get-ScriptDirectory
     $fromScript = Find-AncestorBackupRoot -startPath $scriptDir
     if ($fromScript) {
@@ -148,12 +148,12 @@ function Choose-BackupRoot([switch]$SilentIfDetected) {
         }
     }
 
-    $latestDesktop = Latest-BackupRootOnDesktop
+    $latestDesktop = Get-LatestBackupRootOnDesktop
     if ($latestDesktop) {
         Write-Host "Detected latest Desktop backup folder: $latestDesktop"
         if (Confirm "Use this backup folder?") { return $latestDesktop }
     } else {
-        Write-Warning "No CfgBackup_* folder found on Desktop."
+        Write-Warning "No PwshBkp_* folder found on Desktop."
     }
 
     do {
@@ -169,16 +169,16 @@ function Copy-WithRobocopy($Source, $Dest) {
         Write-Warning "Missing source: $Source"
         return
     }
-    Ensure-Dir $Dest
+    New-DirectoryIfMissing $Dest
 
-    $args = @(
+    $robocopyParams = @(
         "`"$Source`"", "`"$Dest`"",
         "/E", "/COPY:DAT", "/DCOPY:DAT",
         "/R:1", "/W:2",
         "/NFL", "/NDL", "/NP", "/XJ"
     )
 
-    $p = Start-Process -FilePath "robocopy.exe" -ArgumentList $args -Wait -PassThru -WindowStyle Hidden
+    $p = Start-Process -FilePath "robocopy.exe" -ArgumentList $robocopyParams -Wait -PassThru -WindowStyle Hidden
     if ($p.ExitCode -ge 8) {
         Write-Error "Robocopy failed for `"$Source`" -> `"$Dest`" with code $($p.ExitCode)"
     } else {
@@ -186,7 +186,7 @@ function Copy-WithRobocopy($Source, $Dest) {
     }
 }
 
-function Choose-Item([string[]]$Keys) {
+function Select-BackupItem([string[]]$Keys) {
     if (-not $Keys -or $Keys.Count -eq 0) {
         Write-Warning "No items available."
         return $null
@@ -217,7 +217,7 @@ function Show-IncludedPaths {
 
 function Show-RestorePaths {
     Write-Title "Restore Items and Paths (User Dir Items)"
-    $detected = Choose-BackupRoot -SilentIfDetected
+    $detected = Select-BackupRoot -SilentIfDetected
     if ($detected) {
         Write-Host "Using backup root: $detected"
     } else {
@@ -239,7 +239,7 @@ function Show-RestorePaths {
 }
 
 # -------- ZIP Helpers --------
-function Include-SelfInBackup([string]$BackupRoot) {
+function Add-ScriptToBackup([string]$BackupRoot) {
     try {
         if ($PSCommandPath -and (Test-Path -LiteralPath $PSCommandPath)) {
             $destFile = Join-Path $BackupRoot (Split-Path $PSCommandPath -Leaf)
@@ -253,7 +253,7 @@ function Include-SelfInBackup([string]$BackupRoot) {
     }
 }
 
-function Create-Zip([string]$BackupRoot, [string]$ZipPath) {
+function Compress-BackupToZip([string]$BackupRoot, [string]$ZipPath) {
     try {
         if (Test-Path -LiteralPath $ZipPath) {
             Remove-Item -LiteralPath $ZipPath -Force -ErrorAction SilentlyContinue
@@ -271,7 +271,7 @@ function Start-Backup {
     param([string]$BackupRoot = $DefaultBackupRoot)
     Write-Title "Backup All"
     Write-Host "Target: $BackupRoot"
-    Ensure-Dir $BackupRoot
+    New-DirectoryIfMissing $BackupRoot
     foreach ($kvp in $IncludePaths.GetEnumerator()) {
         $name = $kvp.Key
         $src  = $kvp.Value
@@ -280,8 +280,8 @@ function Start-Backup {
     }
 
     if ($CreateZip) {
-        Include-SelfInBackup -BackupRoot $BackupRoot
-        Create-Zip -BackupRoot $BackupRoot -ZipPath $DefaultZipPath
+        Add-ScriptToBackup -BackupRoot $BackupRoot
+        Compress-BackupToZip -BackupRoot $BackupRoot -ZipPath $DefaultZipPath
     }
 
     Write-Host "`nBackup completed." -ForegroundColor Green
@@ -289,18 +289,18 @@ function Start-Backup {
 
 function Start-BackupItem {
     param([string]$BackupRoot = $DefaultBackupRoot)
-    $key = Choose-Item -Keys $IncludePaths.Keys
+    $key = Select-BackupItem -Keys $IncludePaths.Keys
     if (-not $key) { return }
     Write-Title "Backup Item: $key"
     Write-Host "Target: $BackupRoot"
-    Ensure-Dir $BackupRoot
+    New-DirectoryIfMissing $BackupRoot
     $src  = $IncludePaths[$key]
     $dest = Join-Path $BackupRoot $key
     Copy-WithRobocopy -Source $src -Dest $dest
 
     if ($CreateZip) {
-        Include-SelfInBackup -BackupRoot $BackupRoot
-        Create-Zip -BackupRoot $BackupRoot -ZipPath $DefaultZipPath
+        Add-ScriptToBackup -BackupRoot $BackupRoot
+        Compress-BackupToZip -BackupRoot $BackupRoot -ZipPath $DefaultZipPath
     }
 
     Write-Host "`nBackup of $key completed." -ForegroundColor Green
@@ -337,7 +337,7 @@ function Restore-One {
     Write-Host "Restore of $Key done." -ForegroundColor Green
 }
 
-function Print-RestoreAllPlan {
+function Show-RestoreAllPlan {
     Write-Title "Restore All (User Dir Items)"
     foreach ($k in (Get-UserItems)) {
         $p = $IncludePaths[$k]
@@ -353,15 +353,15 @@ function Restore-All {
     }
 
     # Informative check for a Desktop backup
-    $desktopCandidate = Latest-BackupRootOnDesktop
+    $desktopCandidate = Get-LatestBackupRootOnDesktop
     if ($desktopCandidate) {
-        Write-Host "Found CfgBackup_* on Desktop: $desktopCandidate"
+        Write-Host "Found PwshBkp_* on Desktop: $desktopCandidate"
     } else {
-        Write-Warning "No CfgBackup_* found on Desktop."
+        Write-Warning "No PwshBkp_* found on Desktop."
     }
 
-    Print-RestoreAllPlan
-    $backupRoot = Choose-BackupRoot
+    Show-RestoreAllPlan
+    $backupRoot = Select-BackupRoot
     Write-Host ""
     if (-not (Confirm "Restore ALL listed items from `"$backupRoot`"? (Overwrites when needed)")) {
         Write-Host "Restore all canceled."
@@ -376,17 +376,17 @@ function Restore-All {
 
 function Restore-Item {
     $keys = Get-UserItems
-    $key = Choose-Item -Keys $keys
+    $key = Select-BackupItem -Keys $keys
     if (-not $key) { return }
 
-    $desktopCandidate = Latest-BackupRootOnDesktop
+    $desktopCandidate = Get-LatestBackupRootOnDesktop
     if ($desktopCandidate) {
-        Write-Host "Found CfgBackup_* on Desktop: $desktopCandidate"
+        Write-Host "Found PwshBkp_* on Desktop: $desktopCandidate"
     } else {
-        Write-Warning "No CfgBackup_* found on Desktop."
+        Write-Warning "No PwshBkp_* found on Desktop."
     }
 
-    $backupRoot = Choose-BackupRoot
+    $backupRoot = Select-BackupRoot
     Restore-One -BackupRoot $backupRoot -Key $key
 }
 
