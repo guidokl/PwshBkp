@@ -18,6 +18,32 @@ A PowerShell backup script to quickly copy files and directories to a given loca
 
 ---
 
+## ⚙️ Configure
+
+Before running the script, adjust the included paths to match your environment.
+
+- All paths to be backed up are defined in the `$IncludePaths` variable.  
+- Each entry uses a **logical name** (key) mapped to its **actual filesystem path** (value).  
+- You can add, remove, or modify entries as needed.  
+- Restore operations are **non-destructive**: files are copied with `robocopy`, preserving timestamps and attributes, but nothing is deleted.
+
+Example configuration in PwshBkp.ps1 (customize for your needs):
+
+```powershell
+# Included paths (Key = logical name -> Value = path)
+$IncludePaths = [ordered]@{
+    "PowerShell"      = Join-Path $env:USERPROFILE "Documents\PowerShell"
+    "WindowsTerminal" = Join-Path $env:LOCALAPPDATA "Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState"
+    "Everything"      = Join-Path $env:APPDATA      "Everything"
+    "Calibre"         = Join-Path $env:APPDATA      "calibre"
+    "Links"           = Join-Path $env:USERPROFILE  "Links"
+    "SSH"             = Join-Path $env:USERPROFILE  ".ssh"
+    "ObsidianConfig"  = "D:\Home\Files\Obsidian\Nxor-Remote\.obsidian"
+    "Scripts"         = "D:\Home\Files\Scripts"
+}
+```
+---
+
 ## 📥 Backup
 
 - **Backup item** – choose one logical item to copy into today's backup folder.
@@ -37,13 +63,6 @@ A PowerShell backup script to quickly copy files and directories to a given loca
 - **Restore item** – choose one user-dir item to restore.
 - **Restore all** – restores all user-dir items.
 - **Note:** You must unzip if you only have a `.zip`; restore works on folders.
-
----
-
-## ⚙️ Safe to Edit
-
-- Edit `$IncludePaths` to add or remove items.
-- Restore never deletes files; it copies over using `robocopy`, preserving timestamps and attributes.
 
 ---
 

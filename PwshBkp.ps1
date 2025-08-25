@@ -3,14 +3,14 @@
     Backup & restore config folders with a menu.
 
     MENU:
-      1) Backup item
-      2) Backup all
-      3) Restore item
-      4) Restore all
-      5) Show backup items and paths
-      6) Show restore items and paths
-      7) Script Documentation
-      8) Quit
+        1) Backup item
+        2) Backup all
+        3) Restore item
+        4) Restore all
+        5) Show backup items and paths
+        6) Show restore items and paths
+        7) Script Documentation
+        8) Quit
 
     ZIP POLICY (simple & robust)
     - Backup always produces a *folder* at Desktop\CfgBackup_YYMMDD.
@@ -19,12 +19,12 @@
     - Restore ONLY works from a real folder. If you have a ZIP, unzip it first.
 
     USER-DIR RESTORE SET (used by Restore All / Restore Item):
-      PowerShell        -> C:\Users\<user>\Documents\PowerShell
-      WindowsTerminal   -> C:\Users\<user>\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState
-      Everything        -> C:\Users\<user>\AppData\Roaming\Everything
-      Calibre           -> C:\Users\<user>\AppData\Roaming\calibre
-      Links             -> C:\Users\<user>\Links
-      SSH               -> C:\Users\<user>\.ssh
+        PowerShell        -> C:\Users\<user>\Documents\PowerShell
+        WindowsTerminal   -> C:\Users\<user>\AppData\Local\Packages\Microsoft.WindowsTerminal_8wekyb3d8bbwe\LocalState
+        Everything        -> C:\Users\<user>\AppData\Roaming\Everything
+        Calibre           -> C:\Users\<user>\AppData\Roaming\calibre
+        Links             -> C:\Users\<user>\Links
+        SSH               -> C:\Users\<user>\.ssh
 #>
 
 # -------- Settings --------
@@ -95,7 +95,7 @@ Safe to edit
 # -------- Helpers --------
 function Write-Title($text) {
     Write-Host ""
-    Write-Host "=== $text ===" -ForegroundColor Cyan
+    Write-Host "========= $text =========" -ForegroundColor Cyan
 }
 
 function Confirm($message) {
@@ -398,7 +398,7 @@ function Show-Documentation {
 # -------- Menu --------
 function Show-MainMenu {
     do {
-        Write-Title "Config Backup Menu"
+        Write-Title "PwshBkp Menu"
         Write-Host "1) Backup item"
         Write-Host "2) Backup all"
         Write-Host "3) Restore item"
